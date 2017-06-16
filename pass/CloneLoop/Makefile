@@ -1,5 +1,4 @@
-CXXFLAGS=-std=c++11 $(shell llvm-config --cxxflags)
-#-I/home/jinpil/util_build/boost/include
+CXXFLAGS=-std=c++11 $(shell llvm-config --cxxflags) -I$(BOOST_DIR)/include
 
 #LDFLAGS=$(shell llvm-config --ldflags --system-libs --libs)
 #-fno-rtti
