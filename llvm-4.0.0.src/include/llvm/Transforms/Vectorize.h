@@ -122,6 +122,12 @@ Pass *createLoopVectorizePass(bool NoUnrolling = false,
 
 //===----------------------------------------------------------------------===//
 //
+// VectorLoopPass - Create a vector loop schedule pass.
+//
+Pass *createVectorLoopSchedulePass();
+
+//===----------------------------------------------------------------------===//
+//
 // SLPVectorizer - Create a bottom-up SLP vectorizer pass.
 //
 Pass *createSLPVectorizerPass();

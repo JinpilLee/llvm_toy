@@ -137,6 +137,7 @@
 #include "llvm/Transforms/Utils/SymbolRewriter.h"
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
+#include "llvm/Transforms/Vectorize/VectorLoopSchedule.h"
 
 #include <type_traits>
 
@@ -510,6 +511,9 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
   // Cleanup after vectorizers.
   OptimizePM.addPass(SimplifyCFGPass());
   OptimizePM.addPass(InstCombinePass());
+
+  // Instruction Scheduling for SIMD Vectorized Loops
+  OptimizePM.addPass(VectorLoopSchedulePass());
 
   // Unroll small loops to hide loop backedge latency and saturate any parallel
   // execution resources of an out-of-order processor.
