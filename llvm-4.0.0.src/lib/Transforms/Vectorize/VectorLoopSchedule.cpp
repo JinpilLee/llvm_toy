@@ -12,9 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Vectorize/VectorLoopSchedule.h"
-//#include "llvm/Pass.h"
+#include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/LoopInfo.h"
-#include <iostream>
+#include "llvm/Analysis/LoopIterator.h"
 
 #define LDIST_NAME "vector-loop-schedule"
 #define DEBUG_TYPE LDIST_NAME
@@ -23,9 +23,27 @@ using namespace llvm;
 
 namespace {
 static bool runImpl(Function &F, LoopInfo *LI) {
-  bool Changed = false;
+  SmallVector<Loop *, 8> Worklist;
   for (Loop *TopLevelLoop : *LI) {
-    std::cout << "Loop Detected\n";
+    for (Loop *L : depth_first(TopLevelLoop)) {
+      // only handles innermost loops.
+      if (L->empty()) {
+        Worklist.push_back(L);
+      }
+    }
+  }
+
+  bool Changed = false;
+  for (Loop *L : Worklist) {
+    LoopBlocksDFS DFS(L);
+    DFS.perform(LI);
+    int count = 0;
+    for (BasicBlock *BB : make_range(DFS.beginRPO(), DFS.endRPO())) {
+      for (auto &I : *BB) {
+        errs() << count << ": " << I << "\n";
+        count++;
+      }
+    }
   }
 
   return Changed;

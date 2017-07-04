@@ -513,7 +513,8 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
   OptimizePM.addPass(InstCombinePass());
 
   // Instruction Scheduling for SIMD Vectorized Loops
-  OptimizePM.addPass(VectorLoopSchedulePass());
+  // FIXME LoopVectorizePass is not used here?
+  // OptimizePM.addPass(VectorLoopSchedulePass());
 
   // Unroll small loops to hide loop backedge latency and saturate any parallel
   // execution resources of an out-of-order processor.

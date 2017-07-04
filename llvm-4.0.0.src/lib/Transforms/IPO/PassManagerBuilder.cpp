@@ -566,7 +566,6 @@ void PassManagerBuilder::populateModulePassManager(
   MPM.add(createLoopDistributePass());
 
   MPM.add(createLoopVectorizePass(DisableUnrollLoops, LoopVectorize));
-  MPM.add(createVectorLoopSchedulePass());
 
   // Eliminate loads by forwarding stores from the previous iteration to loads
   // of the current iteration.
@@ -636,6 +635,8 @@ void PassManagerBuilder::populateModulePassManager(
     // checked value is loop invariant.
     MPM.add(createLICMPass());
  }
+
+  MPM.add(createVectorLoopSchedulePass());
 
   // After vectorization and unrolling, assume intrinsics may tell us more
   // about pointer alignments.
@@ -782,7 +783,8 @@ void PassManagerBuilder::addLTOOptimizationPasses(legacy::PassManagerBase &PM) {
   if (!DisableUnrollLoops)
     PM.add(createLoopUnrollPass());
 
-  PM.add(createVectorLoopSchedulePass());
+  // FIXME delete from LTO Pass Builder?
+  // PM.add(createVectorLoopSchedulePass());
 
   // Now that we've optimized loops (in particular loop induction variables),
   // we may have exposed more scalar opportunities. Run parts of the scalar
