@@ -92,6 +92,10 @@ void initializeFixupBWInstPassPass(PassRegistry &);
 /// encoding when possible in order to reduce code size.
 FunctionPass *createX86EvexToVexInsts();
 
+/// Instruction Scheduling for OoO processors
+/// Main Target: KNL
+FunctionPass *createX86ScheduleLoop();
+
 void initializeEvexToVexInstPassPass(PassRegistry &);
 
 } // End llvm namespace

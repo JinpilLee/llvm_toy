@@ -380,6 +380,7 @@ void X86PassConfig::addPreRegAlloc() {
     addPass(createX86CallFrameOptimization());
   }
 
+  addPass(createX86ScheduleLoop());
   addPass(createX86WinAllocaExpander());
 }
 

@@ -636,7 +636,8 @@ void PassManagerBuilder::populateModulePassManager(
     MPM.add(createLICMPass());
  }
 
-  MPM.add(createVectorLoopSchedulePass());
+  // FIXME this should be implemented as a MachineFunctionPass
+  // MPM.add(createVectorLoopSchedulePass());
 
   // After vectorization and unrolling, assume intrinsics may tell us more
   // about pointer alignments.
