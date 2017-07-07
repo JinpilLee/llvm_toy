@@ -41,7 +41,7 @@ set(sources
   X86InstrFMA3Info.cpp
   X86InstrInfo.cpp
   X86EvexToVex.cpp
-  X86LoopSchedStrategy.cpp
+  X86SchedStrategy.cpp
   X86MCInstLower.cpp
   X86MachineFunctionInfo.cpp
   X86OptimizeLEAs.cpp
