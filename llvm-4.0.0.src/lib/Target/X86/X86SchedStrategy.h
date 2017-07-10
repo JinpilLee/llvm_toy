@@ -15,6 +15,7 @@
 #define LLVM_LIB_TARGET_X86_SCHEDSTRATEGY_H
 
 #include "llvm/CodeGen/MachineScheduler.h"
+#include "llvm/CodeGen/ScheduleDFS.h"
 
 namespace llvm {
 
@@ -23,7 +24,11 @@ class SIRegisterInfo;
 class X86SchedStrategy : public GenericScheduler {
 public:
   X86SchedStrategy(const MachineSchedContext *C);
+  void initialize(ScheduleDAGMI *dag) override;
   SUnit *pickNode(bool &IsTopNode) override;
+
+private:
+  const SchedDFSResult *DFSResult;
 };
 
 } // End namespace llvm

@@ -23,23 +23,63 @@ X86SchedStrategy::X86SchedStrategy(const MachineSchedContext *C)
   : GenericScheduler(C) {
 }
 
+void X86SchedStrategy::initialize(ScheduleDAGMI *dag) {
+  assert(dag->hasVRegLiveness() && "ILPScheduler needs vreg liveness");
+
+  ScheduleDAGMILive *DAG = static_cast<ScheduleDAGMILive*>(dag);
+  DAG->computeDFSResult();
+  DFSResult = DAG->getDFSResult();
+
+  GenericScheduler::initialize(dag);
+}
+
 SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
   if (!RegionPolicy.OnlyTopDown) {
     return GenericScheduler::pickNode(IsTopNode);
   }
 
-  ReadyQueue &Q = Top.Available;
-  for (SUnit *SU : Q) {
-    if (SU != nullptr) {
-      assert(SU->isInstr() && "Target SU has no MI!");
-      MachineInstr *MI = SU->getInstr();
-      if (MI->mayLoadOrStore()) {
-        MI->dump();
-        std::cout << "Node Num: " << SU->NodeNum << "\n";
-        std::cout << "Queue ID: " << SU->NodeQueueId << "\n";
+  SUnit *CandSU = nullptr;
+  for (SUnit *CurrSU : Top.Available) {
+    if (CurrSU != nullptr) {
+      MachineInstr *CurrMI = CurrSU->getInstr();
+      if (CurrMI->mayLoad()) {
+        if (CandSU == nullptr) {
+          CandSU = CurrSU;
+          continue;
+        }
+
+        unsigned SubTreeID =  DFSResult->getSubtreeID(CurrSU);
+        if (SubTreeID < DFSResult->getSubtreeID(CandSU)) {
+          CandSU = CurrSU;
+          continue;
+        }
+        else if (SubTreeID == DFSResult->getSubtreeID(CandSU)) {
+          MachineInstr *CandMI = CandSU->getInstr();
+          if (CurrMI->getOperand(0).getReg() <
+              CandMI->getOperand(0).getReg()) {
+            CandSU = CurrSU;
+            continue;
+          }
+        }
       }
     }
   }
 
-  return GenericScheduler::pickNode(IsTopNode);
+  if (CandSU == nullptr) return GenericScheduler::pickNode(IsTopNode);
+  else {
+    // FIXME for debug
+    //MachineInstr *CandMI = CandSU->getInstr();
+    //CandMI->dump();
+
+    if (CandSU->isTopReady()) {
+      Top.removeReady(CandSU);
+    }
+
+    if (CandSU->isBottomReady()) {
+      Bot.removeReady(CandSU);
+    }
+
+    IsTopNode = true;
+    return CandSU;
+  }
 }
