@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "X86SchedStrategy.h"
+#include <iostream>
 
 #define DEBUG_TYPE "misched"
 
@@ -23,5 +24,22 @@ X86SchedStrategy::X86SchedStrategy(const MachineSchedContext *C)
 }
 
 SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
+  if (!RegionPolicy.OnlyTopDown) {
+    return GenericScheduler::pickNode(IsTopNode);
+  }
+
+  ReadyQueue &Q = Top.Available;
+  for (SUnit *SU : Q) {
+    if (SU != nullptr) {
+      assert(SU->isInstr() && "Target SU has no MI!");
+      MachineInstr *MI = SU->getInstr();
+      if (MI->mayLoadOrStore()) {
+        MI->dump();
+        std::cout << "Node Num: " << SU->NodeNum << "\n";
+        std::cout << "Queue ID: " << SU->NodeQueueId << "\n";
+      }
+    }
+  }
+
   return GenericScheduler::pickNode(IsTopNode);
 }

@@ -22,6 +22,7 @@ class SIRegisterInfo;
 
 class X86SchedStrategy : public GenericScheduler {
 public:
+  X86SchedStrategy(const MachineSchedContext *C);
   SUnit *pickNode(bool &IsTopNode) override;
 };
 

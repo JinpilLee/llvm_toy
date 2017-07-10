@@ -14,7 +14,7 @@
 #include "X86TargetMachine.h"
 #include "X86.h"
 #include "X86CallLowering.h"
-#include "X86LoopSchedStrategy.h"
+#include "X86SchedStrategy.h"
 #include "X86TargetObjectFile.h"
 #include "X86TargetTransformInfo.h"
 #include "llvm/CodeGen/GlobalISel/GISelAccessor.h"
@@ -292,7 +292,7 @@ public:
     // XXX original code start
     //   ScheduleDAGMILive *DAG = createGenericSchedLive(C);
     ScheduleDAGMILive *DAG =
-      new ScheduleDAGMILive(C, make_unique<X86LoopSchedStrategy>(C));
+      new ScheduleDAGMILive(C, make_unique<X86SchedStrategy>(C));
     DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
     // XXX original code end
     DAG->addMutation(createMacroFusionDAGMutation(DAG->TII));
@@ -387,7 +387,7 @@ void X86PassConfig::addPreRegAlloc() {
   }
 
   // FIXME not used?
-  addPass(createX86ScheduleLoop());
+  // addPass(createX86ScheduleLoop());
   addPass(createX86WinAllocaExpander());
 }
 
