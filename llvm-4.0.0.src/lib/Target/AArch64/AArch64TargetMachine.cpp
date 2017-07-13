@@ -15,6 +15,7 @@
 #include "AArch64InstructionSelector.h"
 #include "AArch64LegalizerInfo.h"
 #include "AArch64RegisterBankInfo.h"
+#include "AArch64SchedStrategy.h"
 #include "AArch64Subtarget.h"
 #include "AArch64TargetMachine.h"
 #include "AArch64TargetObjectFile.h"
@@ -320,7 +321,12 @@ public:
 
   ScheduleDAGInstrs *
   createMachineScheduler(MachineSchedContext *C) const override {
-    ScheduleDAGMILive *DAG = createGenericSchedLive(C);
+    // XXX original code start
+    //   ScheduleDAGMILive *DAG = createGenericSchedLive(C);
+    ScheduleDAGMILive *DAG =
+      new ScheduleDAGMILive(C, make_unique<AArch64SchedStrategy>(C));
+    DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
+    // XXX original code end
     DAG->addMutation(createLoadClusterDAGMutation(DAG->TII, DAG->TRI));
     DAG->addMutation(createStoreClusterDAGMutation(DAG->TII, DAG->TRI));
     DAG->addMutation(createMacroFusionDAGMutation(DAG->TII));
@@ -477,6 +483,8 @@ void AArch64PassConfig::addPreRegAlloc() {
     // be register coaleascer friendly.
     addPass(&PeepholeOptimizerID);
   }
+
+  addPass(createAArch64ScheduleLoop());
 }
 
 void AArch64PassConfig::addPostRegAlloc() {
