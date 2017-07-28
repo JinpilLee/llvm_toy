@@ -21,9 +21,14 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetInstrInfo.h"
-#include <iostream>
+#include <map>
 
 using namespace llvm;
+
+typedef std::map<unsigned, MachineInstr *> RegInstrMap;
+
+// FIXME ad-hoc impl
+std::vector<MachineInstr *> X86SchedHighPriorInstrVector;
 
 #define DEBUG_TYPE "x86-schedule-loop"
 
@@ -42,6 +47,8 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
+  void mapDef(RegInstrMap &DefMap, MachineInstr &MI);
+  void addInstrRec(RegInstrMap &DefMap, MachineInstr *MI);
   bool processLoop(MachineLoop *L);
 
   static char ID;
@@ -75,28 +82,36 @@ bool ScheduleLoopPass::runOnMachineFunction(MachineFunction &MF) {
   return Changed;
 }
 
+void ScheduleLoopPass::mapDef(RegInstrMap &DefMap, MachineInstr &MI) {
+  for (unsigned i = 0; i < MI.getNumOperands(); i++) {
+    MachineOperand &MO = MI.getOperand(i);
+    if (MO.isReg() && MO.isDef()) {
+      DefMap[MO.getReg()] = &MI;
+    }
+  }
+}
+
+void ScheduleLoopPass::addInstrRec(RegInstrMap &DefMap, MachineInstr *MI) {
+  X86SchedHighPriorInstrVector.push_back(MI);
+  for (unsigned i = 0; i < MI->getNumOperands(); i++) {
+    MachineOperand &MO = MI->getOperand(i);
+    if (MO.isReg() && !MO.isDef()) {
+      RegInstrMap::iterator Iter = DefMap.find(MO.getReg());
+      if (Iter != DefMap.end()) {
+        addInstrRec(DefMap, Iter->second);
+      }
+    }
+  }
+}
+
 bool ScheduleLoopPass::processLoop(MachineLoop *L) {
-  int UnrollCount = 0;
-  MachineInstr *PrevMI = nullptr;
+  RegInstrMap DefMap;
   for (auto &MBB : L->blocks()) {
     for (auto &MI : *MBB) {
-      if (MI.mayLoad()) {
-        if (PrevMI) {
-          if (PrevMI->getOpcode() == MI.getOpcode()) {
-            if (UnrollCount == 3) UnrollCount = 0;
-            else                  UnrollCount++;
-          }
-          else {
-            UnrollCount = 0;
-          }
-        }
-        else { // first MI in the group
-          UnrollCount = 0;
-        }
+      mapDef(DefMap, MI);
 
-        std::cout << UnrollCount << "\n";
-        MI.dump();
-        PrevMI = &MI;
+      if (MI.mayLoad()) {
+        addInstrRec(DefMap, &MI);
       }
     }
   }

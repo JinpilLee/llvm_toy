@@ -29,6 +29,10 @@ public:
 
 private:
   const SchedDFSResult *DFSResult;
+
+  bool hasHighPriority(MachineInstr *MI);
+  unsigned getDefReg(MachineInstr *MI);
+  SUnit *chooseNewCand(SUnit *Cand, SUnit *Curr);
 };
 
 } // End namespace llvm

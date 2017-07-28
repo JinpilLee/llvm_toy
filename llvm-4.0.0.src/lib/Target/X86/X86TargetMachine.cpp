@@ -386,8 +386,7 @@ void X86PassConfig::addPreRegAlloc() {
     addPass(createX86CallFrameOptimization());
   }
 
-  // FIXME not used?
-  // addPass(createX86ScheduleLoop());
+  addPass(createX86ScheduleLoop());
   addPass(createX86WinAllocaExpander());
 }
 
