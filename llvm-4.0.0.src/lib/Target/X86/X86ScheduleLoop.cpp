@@ -93,7 +93,7 @@ bool X86FindLoadChain::runOnMachineFunction(MachineFunction &MF) {
 void X86FindLoadChain::mapDef(RegInstrMap &DefMap, MachineInstr &MI) {
   for (unsigned i = 0; i < MI.getNumOperands(); i++) {
     MachineOperand &MO = MI.getOperand(i);
-    if (MO.isReg() && MO.isDef()) {
+    if (MO.isReg() && MO.isDef() && !MO.isDead()) {
       DefMap[MO.getReg()] = &MI;
     }
   }
@@ -103,10 +103,11 @@ void X86FindLoadChain::addInstrRec(RegInstrMap &DefMap, MachineInstr *MI) {
   X86SchedHighPriorInstrVector.push_back(MI);
   for (unsigned i = 0; i < MI->getNumOperands(); i++) {
     MachineOperand &MO = MI->getOperand(i);
-    if (MO.isReg() && !MO.isDef()) {
+    if (MO.isReg() && MO.readsReg()) {
       RegInstrMap::iterator Iter = DefMap.find(MO.getReg());
       if (Iter != DefMap.end()) {
-        addInstrRec(DefMap, Iter->second);
+        MachineInstr *DefMI = Iter->second;
+        if (DefMI != MI) addInstrRec(DefMap, DefMI);
       }
     }
   }
@@ -116,14 +117,11 @@ bool X86FindLoadChain::processLoop(MachineLoop *L) {
   RegInstrMap DefMap;
   for (auto &MBB : L->blocks()) {
     for (auto &MI : *MBB) {
-/*
       mapDef(DefMap, MI);
 
       if (MI.mayLoad()) {
         addInstrRec(DefMap, &MI);
       }
-*/
-      MI.dump();
     }
   }
 
