@@ -54,6 +54,8 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
+  const X86InstrInfo *TII;
+
   void mapDef(RegInstrMap &DefMap, MachineInstr &MI);
   void addInstrRec(RegInstrMap &DefMap, MachineInstr *MI);
   bool processLoop(MachineLoop *L);
@@ -70,6 +72,8 @@ FunctionPass *llvm::createX86FindLoadChainPass() { return new X86FindLoadChain()
 bool X86FindLoadChain::runOnMachineFunction(MachineFunction &MF) {
   if (skipFunction(*MF.getFunction()))
     return false;
+  
+  TII = MF.getSubtarget<X86Subtarget>().getInstrInfo();
 
   MachineLoopInfo *MLI = &getAnalysis<MachineLoopInfo>();
   SmallVector<MachineLoop *, 8> Worklist(MLI->begin(), MLI->end());
@@ -119,7 +123,8 @@ bool X86FindLoadChain::processLoop(MachineLoop *L) {
     for (auto &MI : *MBB) {
       mapDef(DefMap, MI);
 
-      if (MI.mayLoad()) {
+      if (MI.mayLoad() &&
+          TII->isHighLatencyDef(MI.getOpcode())) {
         addInstrRec(DefMap, &MI);
       }
     }

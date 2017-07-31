@@ -37,6 +37,8 @@ void X86SchedStrategy::initialize(ScheduleDAGMI *dag) {
   DFSResult = DAG->getDFSResult();
 
   GenericScheduler::initialize(dag);
+
+  XII = static_cast<const X86InstrInfo*>(DAG->TII);
 }
 
 SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
@@ -70,12 +72,23 @@ SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
 }
 
 bool X86SchedStrategy::hasHighPriority(MachineInstr *MI) {
+#if 0
   std::vector<MachineInstr *>::iterator VecIter =
     find(X86SchedHighPriorInstrVector.begin(),
          X86SchedHighPriorInstrVector.end(),
          MI);
 
   return VecIter != X86SchedHighPriorInstrVector.end();
+#else
+//  if (XII->isHighLatencyDef(MI->getOpcode())) {
+  if (MI->mayLoad()) {
+    MI->dump();
+    return true;
+  }
+  else {
+    return false;
+  }
+#endif
 }
 
 unsigned X86SchedStrategy::getDefReg(MachineInstr *MI) {

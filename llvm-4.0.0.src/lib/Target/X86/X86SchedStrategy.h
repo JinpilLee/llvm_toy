@@ -16,6 +16,7 @@
 
 #include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/ScheduleDFS.h"
+#include "X86InstrInfo.h"
 
 namespace llvm {
 
@@ -29,6 +30,7 @@ public:
 
 private:
   const SchedDFSResult *DFSResult;
+  const X86InstrInfo *XII;
 
   bool hasHighPriority(MachineInstr *MI);
   unsigned getDefReg(MachineInstr *MI);
