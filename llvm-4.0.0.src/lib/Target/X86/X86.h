@@ -92,9 +92,10 @@ void initializeFixupBWInstPassPass(PassRegistry &);
 /// encoding when possible in order to reduce code size.
 FunctionPass *createX86EvexToVexInsts();
 
-/// Instruction Scheduling for OoO processors
 /// Main Target: KNL
-FunctionPass *createX86ScheduleLoop();
+void initializeX86FindLoadChainPass(PassRegistry &);
+FunctionPass *createX86FindLoadChainPass();
+extern char &X86FindLoadChainID;
 
 void initializeEvexToVexInstPassPass(PassRegistry &);
 

@@ -56,12 +56,6 @@ SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
 
   if (CandSU == nullptr) return GenericScheduler::pickNode(IsTopNode);
   else {
-    // FIXME for debug
-    MachineInstr *CandMI = CandSU->getInstr();
-    CandMI->dump();
-    std::cerr << "SubID: " << DFSResult->getSubtreeID(CandSU) << "\n";
-    std::cerr << "Depth: " << CandSU->getDepth() << "\n";
-
     if (CandSU->isTopReady()) {
       Top.removeReady(CandSU);
     }
@@ -101,11 +95,22 @@ SUnit *X86SchedStrategy::chooseNewCand(SUnit *CandSU, SUnit *CurrSU) {
     return CurrSU;
   }
 
-  unsigned SubTreeID =  DFSResult->getSubtreeID(CurrSU);
-  if (SubTreeID < DFSResult->getSubtreeID(CandSU)) {
+  unsigned CurrSubTreeID =  DFSResult->getSubtreeID(CurrSU);
+  unsigned CandSubTreeID =  DFSResult->getSubtreeID(CandSU);
+  if (CurrSubTreeID < CandSubTreeID) {
     return CurrSU;
   }
-  else if (SubTreeID == DFSResult->getSubtreeID(CandSU)) {
+  else if (CurrSubTreeID == CandSubTreeID) {
+    MachineInstr *CurrMI = CurrSU->getInstr();
+    MachineInstr *CandMI = CandSU->getInstr();
+
+    if (CurrMI->mayLoad() && !CandMI->mayLoad()) {
+      return CurrSU;
+    }
+    else if (!CurrMI->mayLoad() && CandMI->mayLoad()) {
+      return CandSU;
+    }
+
     if (getDefReg(CurrSU->getInstr()) <
         getDefReg(CandSU->getInstr())) {
       return CurrSU;

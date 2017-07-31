@@ -48,6 +48,7 @@ extern "C" void LLVMInitializeX86Target() {
   initializeWinEHStatePassPass(PR);
   initializeFixupBWInstPassPass(PR);
   initializeEvexToVexInstPassPass(PR);
+  initializeX86FindLoadChainPass(PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -380,13 +381,14 @@ bool X86PassConfig::addPreISel() {
 }
 
 void X86PassConfig::addPreRegAlloc() {
+  insertPass(&RegisterCoalescerID, &X86FindLoadChainID);
+
   if (getOptLevel() != CodeGenOpt::None) {
     addPass(createX86FixupSetCC());
     addPass(createX86OptimizeLEAs());
     addPass(createX86CallFrameOptimization());
   }
 
-  addPass(createX86ScheduleLoop());
   addPass(createX86WinAllocaExpander());
 }
 

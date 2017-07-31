@@ -30,14 +30,21 @@ typedef std::map<unsigned, MachineInstr *> RegInstrMap;
 // FIXME ad-hoc impl
 std::vector<MachineInstr *> X86SchedHighPriorInstrVector;
 
-#define DEBUG_TYPE "x86-schedule-loop"
+#define FINDLDCHN_DESC "X86 Find Load Chain"
+#define FINDLDCHN_NAME "x86-find-load-chain"
+
+#define DEBUG_TYPE FINDLDCHN_NAME
 
 namespace {
-class ScheduleLoopPass : public MachineFunctionPass {
+class X86FindLoadChain : public MachineFunctionPass {
 public:
-  ScheduleLoopPass() : MachineFunctionPass(ID) {}
+  static char ID;
 
-  StringRef getPassName() const override { return "X86 Schedule Loops"; }
+  X86FindLoadChain() : MachineFunctionPass(ID) {
+    initializeX86FindLoadChainPass(*PassRegistry::getPassRegistry());
+  }
+
+  StringRef getPassName() const override { return "X86 Find Load Chain"; }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<MachineLoopInfo>();
@@ -50,16 +57,17 @@ private:
   void mapDef(RegInstrMap &DefMap, MachineInstr &MI);
   void addInstrRec(RegInstrMap &DefMap, MachineInstr *MI);
   bool processLoop(MachineLoop *L);
-
-  static char ID;
 };
 
-char ScheduleLoopPass::ID = 0;
+char X86FindLoadChain::ID = 0;
 }
 
-FunctionPass *llvm::createX86ScheduleLoop() { return new ScheduleLoopPass(); }
+INITIALIZE_PASS(X86FindLoadChain, FINDLDCHN_NAME, FINDLDCHN_DESC, false, false)
 
-bool ScheduleLoopPass::runOnMachineFunction(MachineFunction &MF) {
+char &llvm::X86FindLoadChainID = X86FindLoadChain::ID;
+FunctionPass *llvm::createX86FindLoadChainPass() { return new X86FindLoadChain(); }
+
+bool X86FindLoadChain::runOnMachineFunction(MachineFunction &MF) {
   if (skipFunction(*MF.getFunction()))
     return false;
 
@@ -82,7 +90,7 @@ bool ScheduleLoopPass::runOnMachineFunction(MachineFunction &MF) {
   return Changed;
 }
 
-void ScheduleLoopPass::mapDef(RegInstrMap &DefMap, MachineInstr &MI) {
+void X86FindLoadChain::mapDef(RegInstrMap &DefMap, MachineInstr &MI) {
   for (unsigned i = 0; i < MI.getNumOperands(); i++) {
     MachineOperand &MO = MI.getOperand(i);
     if (MO.isReg() && MO.isDef()) {
@@ -91,7 +99,7 @@ void ScheduleLoopPass::mapDef(RegInstrMap &DefMap, MachineInstr &MI) {
   }
 }
 
-void ScheduleLoopPass::addInstrRec(RegInstrMap &DefMap, MachineInstr *MI) {
+void X86FindLoadChain::addInstrRec(RegInstrMap &DefMap, MachineInstr *MI) {
   X86SchedHighPriorInstrVector.push_back(MI);
   for (unsigned i = 0; i < MI->getNumOperands(); i++) {
     MachineOperand &MO = MI->getOperand(i);
@@ -104,15 +112,18 @@ void ScheduleLoopPass::addInstrRec(RegInstrMap &DefMap, MachineInstr *MI) {
   }
 }
 
-bool ScheduleLoopPass::processLoop(MachineLoop *L) {
+bool X86FindLoadChain::processLoop(MachineLoop *L) {
   RegInstrMap DefMap;
   for (auto &MBB : L->blocks()) {
     for (auto &MI : *MBB) {
+/*
       mapDef(DefMap, MI);
 
       if (MI.mayLoad()) {
         addInstrRec(DefMap, &MI);
       }
+*/
+      MI.dump();
     }
   }
 
