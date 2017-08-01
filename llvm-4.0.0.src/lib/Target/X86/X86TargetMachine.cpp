@@ -13,6 +13,7 @@
 
 #include "X86TargetMachine.h"
 #include "X86.h"
+#include "X86AdvILPSched.h"
 #include "X86CallLowering.h"
 #include "X86SchedStrategy.h"
 #include "X86TargetObjectFile.h"
@@ -290,12 +291,17 @@ public:
 
   ScheduleDAGInstrs *
   createMachineScheduler(MachineSchedContext *C) const override {
+#if 0
     // XXX original code start
     //   ScheduleDAGMILive *DAG = createGenericSchedLive(C);
     ScheduleDAGMILive *DAG =
       new ScheduleDAGMILive(C, make_unique<X86SchedStrategy>(C));
     DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
     // XXX original code end
+#else
+    ScheduleDAGMILive *DAG = 
+      new ScheduleDAGMILive(C, make_unique<X86AdvILPSched>());
+#endif
     DAG->addMutation(createMacroFusionDAGMutation(DAG->TII));
     return DAG;
   }
