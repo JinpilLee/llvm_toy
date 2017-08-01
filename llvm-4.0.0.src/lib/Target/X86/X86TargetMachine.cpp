@@ -35,6 +35,10 @@ static cl::opt<bool> EnableMachineCombinerPass("x86-machine-combiner",
                                cl::desc("Enable the machine combiner pass"),
                                cl::init(true), cl::Hidden);
 
+static cl::opt<bool> EnableAdvILPSchedPass("x86-adv-ilp-sched",
+                               cl::desc("Enable the X86AdvILPSched pass"),
+                               cl::init(false), cl::Hidden);
+
 namespace llvm {
 void initializeWinEHStatePassPass(PassRegistry &);
 }
@@ -298,10 +302,16 @@ public:
       new ScheduleDAGMILive(C, make_unique<X86SchedStrategy>(C));
     DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
     // XXX original code end
-#else
-    ScheduleDAGMILive *DAG = 
-      new ScheduleDAGMILive(C, make_unique<X86AdvILPSched>());
 #endif
+
+    ScheduleDAGMILive *DAG = nullptr;
+    if (EnableAdvILPSchedPass) {
+      DAG = new ScheduleDAGMILive(C, make_unique<X86AdvILPSched>());
+    }
+    else {
+      DAG = createGenericSchedLive(C);
+    }
+
     DAG->addMutation(createMacroFusionDAGMutation(DAG->TII));
     return DAG;
   }
