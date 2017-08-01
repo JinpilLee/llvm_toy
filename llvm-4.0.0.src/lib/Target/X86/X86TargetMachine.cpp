@@ -53,7 +53,8 @@ extern "C" void LLVMInitializeX86Target() {
   initializeWinEHStatePassPass(PR);
   initializeFixupBWInstPassPass(PR);
   initializeEvexToVexInstPassPass(PR);
-  initializeX86FindLoadChainPass(PR);
+  // FIXME not used
+  // initializeX86FindLoadChainPass(PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -295,21 +296,17 @@ public:
 
   ScheduleDAGInstrs *
   createMachineScheduler(MachineSchedContext *C) const override {
-#if 0
     // XXX original code start
     //   ScheduleDAGMILive *DAG = createGenericSchedLive(C);
-    ScheduleDAGMILive *DAG =
-      new ScheduleDAGMILive(C, make_unique<X86SchedStrategy>(C));
-    DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
     // XXX original code end
-#endif
-
     ScheduleDAGMILive *DAG = nullptr;
     if (EnableAdvILPSchedPass) {
       DAG = new ScheduleDAGMILive(C, make_unique<X86AdvILPSched>());
     }
     else {
-      DAG = createGenericSchedLive(C);
+      // same with createGenericSchedLive(C);
+      DAG = new ScheduleDAGMILive(C, make_unique<X86SchedStrategy>(C));
+      DAG->addMutation(createCopyConstrainDAGMutation(DAG->TII, DAG->TRI));
     }
 
     DAG->addMutation(createMacroFusionDAGMutation(DAG->TII));
@@ -397,7 +394,8 @@ bool X86PassConfig::addPreISel() {
 }
 
 void X86PassConfig::addPreRegAlloc() {
-  insertPass(&RegisterCoalescerID, &X86FindLoadChainID);
+  // FIXME not used
+  // insertPass(&RegisterCoalescerID, &X86FindLoadChainID);
 
   if (getOptLevel() != CodeGenOpt::None) {
     addPass(createX86FixupSetCC());

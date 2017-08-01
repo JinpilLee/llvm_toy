@@ -22,9 +22,6 @@
 
 using namespace llvm;
 
-// FIXME ad-hoc implementation
-extern std::vector<MachineInstr *> X86SchedHighPriorInstrVector;
-
 X86SchedStrategy::X86SchedStrategy(const MachineSchedContext *C)
   : GenericScheduler(C) {
 }
@@ -37,8 +34,6 @@ void X86SchedStrategy::initialize(ScheduleDAGMI *dag) {
   DFSResult = DAG->getDFSResult();
 
   GenericScheduler::initialize(dag);
-
-  XII = static_cast<const X86InstrInfo*>(DAG->TII);
 }
 
 SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
@@ -50,84 +45,30 @@ SUnit *X86SchedStrategy::pickNode(bool &IsTopNode) {
   for (SUnit *CurrSU : Top.Available) {
     if (CurrSU != nullptr) { // FIXME requires this?
       MachineInstr *CurrMI = CurrSU->getInstr();
-      if (hasHighPriority(CurrMI)) {
-        CandSU = chooseNewCand(CandSU, CurrSU);
+      if (CurrMI->mayLoad()) {
+        CandSU = chooseNewLoad(CandSU, CurrSU);
       }
     }
   }
 
   if (CandSU == nullptr) return GenericScheduler::pickNode(IsTopNode);
   else {
-    if (CandSU->isTopReady()) {
-      Top.removeReady(CandSU);
-    }
-
-    if (CandSU->isBottomReady()) {
-      Bot.removeReady(CandSU);
-    }
+    if (CandSU->isTopReady())    Top.removeReady(CandSU);
+    if (CandSU->isBottomReady()) Bot.removeReady(CandSU);
 
     IsTopNode = true;
     return CandSU;
   }
 }
 
-bool X86SchedStrategy::hasHighPriority(MachineInstr *MI) {
-#if 0
-  std::vector<MachineInstr *>::iterator VecIter =
-    find(X86SchedHighPriorInstrVector.begin(),
-         X86SchedHighPriorInstrVector.end(),
-         MI);
-
-  return VecIter != X86SchedHighPriorInstrVector.end();
-#else
-//  if (XII->isHighLatencyDef(MI->getOpcode())) {
-  if (MI->mayLoad()) {
-    MI->dump();
-    return true;
-  }
-  else {
-    return false;
-  }
-#endif
-}
-
-unsigned X86SchedStrategy::getDefReg(MachineInstr *MI) {
-  for (unsigned i = 0; i < MI->getNumOperands(); i++) {
-    MachineOperand &MO = MI->getOperand(i);
-    if (MO.isReg() && MO.isDef()) {
-      return MO.getReg();
-    }
-  }
-
-  std::cerr << "UNREACHABLE\n";
-  return 0; // FIXME unreachable
-}
-
-SUnit *X86SchedStrategy::chooseNewCand(SUnit *CandSU, SUnit *CurrSU) {
-  if (CandSU == nullptr) {
-    return CurrSU;
-  }
+SUnit *X86SchedStrategy::chooseNewLoad(SUnit *CandSU, SUnit *CurrSU) {
+  if (CandSU == nullptr) return CurrSU;
 
   unsigned CurrSubTreeID =  DFSResult->getSubtreeID(CurrSU);
   unsigned CandSubTreeID =  DFSResult->getSubtreeID(CandSU);
-  if (CurrSubTreeID < CandSubTreeID) {
-    return CurrSU;
-  }
+  if (CurrSubTreeID < CandSubTreeID) return CurrSU;
   else if (CurrSubTreeID == CandSubTreeID) {
-    MachineInstr *CurrMI = CurrSU->getInstr();
-    MachineInstr *CandMI = CandSU->getInstr();
-
-    if (CurrMI->mayLoad() && !CandMI->mayLoad()) {
-      return CurrSU;
-    }
-    else if (!CurrMI->mayLoad() && CandMI->mayLoad()) {
-      return CandSU;
-    }
-
-    if (getDefReg(CurrSU->getInstr()) <
-        getDefReg(CandSU->getInstr())) {
-      return CurrSU;
-    }
+    if (CurrSU < CandSU) return CurrSU;
   }
 
   return CandSU;

@@ -30,11 +30,9 @@ public:
 
 private:
   const SchedDFSResult *DFSResult;
-  const X86InstrInfo *XII;
 
-  bool hasHighPriority(MachineInstr *MI);
   unsigned getDefReg(MachineInstr *MI);
-  SUnit *chooseNewCand(SUnit *Cand, SUnit *Curr);
+  SUnit *chooseNewLoad(SUnit *Cand, SUnit *Curr);
 };
 
 } // End namespace llvm
